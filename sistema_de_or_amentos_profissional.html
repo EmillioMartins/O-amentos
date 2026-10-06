@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Orçamentos Profissional</title>
+    <!-- Tailwind CSS for modern, responsive UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Print styles: hides operational forms and prints only the clean professional quote document */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-quote, #printable-quote * {
+                visibility: visible;
+            }
+            #printable-quote {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 20px;
+                box-shadow: none !important;
+                background: white !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-slate-900 text-white shadow-md no-print">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 p-2.5 rounded-xl text-white shadow-lg">
+                    <i class="fa-solid fa-file-invoice-dollar text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">TechOrçamentos Pro</h1>
+                    <p class="text-xs text-slate-400">Sistema de Gestão de Ordens e Orçamentos de Serviços</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="openImportModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                    <i class="fa-solid fa-file-csv text-emerald-400"></i> Importar CSV
+                </button>
+                <button onclick="resetForm()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right text-amber-400"></i> Novo Orçamento
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Panel: Form Controls & Inputs (Hidden on Print) -->
+        <div class="lg:col-span-7 space-y-6 no-print">
+            
+            <!-- Metadata Card (Quote # & Date) -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-hashtag text-blue-600"></i> Informações do Orçamento
+                    </h2>
+                    <span class="text-xs font-medium bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full">Automático</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Número do Orçamento</label>
+                        <input type="text" id="quote-number" readonly class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Data de Emissão</label>
+                        <input type="date" id="quote-date" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Section -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-user text-blue-600"></i> Dados do Cliente
+                    </h2>
+                    <button onclick="toggleNewClient()" id="toggle-client-btn" class="text-xs text-blue-600 hover:text-blue-800 font-medium transition">
+                        + Cadastrar Novo Cliente
+                    </button>
+                </div>
+                
+                <div id="client-select-container" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Selecionar Cliente Cadastrado</label>
+                        <select id="client-select" onchange="onSelectClient()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="">Selecione um cliente...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="client-form-container" class="hidden space-y-3 mt-3 pt-3 border-t border-slate-100">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Nome Completo / Empresa *</label>
+                            <input type="text" id="new-client-name" placeholder="Ex: João da Silva" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">CPF / CNPJ</label>
+                            <input type="text" id="new-client-doc" placeholder="000.000.000-00" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Telefone / WhatsApp</label>
+                            <input type="text" id="new-client-phone" placeholder="(00) 90000-0000" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">E-mail</label>
+                            <input type="email" id="new-client-email" placeholder="cliente@email.com" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Endereço Completo</label>
+                        <input type="text" id="new-client-address" placeholder="Rua Exemplo, 123 - Bairro - Cidade/UF" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div class="flex justify-end gap-2 pt-1">
+                        <button onclick="cancelNewClient()" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition">Cancelar</button>
+                        <button onclick="saveNewClient()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition shadow-sm">Salvar e Selecionar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equipment Section -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                <h2 class="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-laptop text-blue-600"></i> Dados do Equipamento / Aparelho
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Tipo de Aparelho</label>
+                        <input type="text" id="eq-type" placeholder="Ex: Notebook / Smartphone" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updatePreview()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Marca</label>
+                        <input type="text" id="eq-brand" placeholder="Ex: Dell / Apple" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updatePreview()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Modelo</label>
+                        <input type="text" id="eq-model" placeholder="Ex: Inspiron 15" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updatePreview()">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Número de Série / IMEI</label>
+                        <input type="text" id="eq-serial" placeholder="Ex: S/N 983274923" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updatePreview()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Acessórios Deixados</label>
+                        <input type="text" id="eq-accessories" placeholder="Ex: Carregador original, capa protetora" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updatePreview()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items & Services Catalog Selection -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-blue-600"></i> Seleção de Peças e Serviços
+                    </h2>
+                    <span class="text-xs text-slate-500">Marque para incluir no orçamento</span>
+                </div>
+                
+                <div class="overflow-x-auto max-h-72 border border-slate-200 rounded-xl mb-4">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-50 text-slate-600 text-xs font-semibold uppercase sticky top-0 border-b border-slate-200">
+                            <tr>
+                                <th class="p-3 w-10 text-center"><i class="fa-solid fa-check"></i></th>
+                                <th class="p-3">Item / Serviço</th>
+                                <th class="p-3 w-20 text-center">Qtd</th>
+                                <th class="p-3 w-28 text-right">Valor Unit. (R$)</th>
+                                <th class="p-3 w-28 text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="catalog-tbody" class="divide-y divide-slate-100 text-sm">
+                            <!-- Dynamically populated rows -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Custom Item Creator -->
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col sm:flex-row gap-2 items-center">
+                    <input type="text" id="custom-item-name" placeholder="Adicionar outro item/serviço avulso..." class="flex-grow bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="number" id="custom-item-price" placeholder="R$ 0,00" step="0.01" min="0" class="w-32 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button onclick="addCustomItem()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition shadow-sm">Adicionar</button>
+                </div>
+            </div>
+
+            <!-- Discount & Notes Section -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4">
+                <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-percent text-blue-600"></i> Desconto e Observações
+                </h2>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Tipo de Desconto</label>
+                        <select id="discount-type" onchange="calculateTotals()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="fixed">Valor Fixo (R$)</option>
+                            <option value="percent">Porcentagem (%)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Valor do Desconto</label>
+                        <input type="number" id="discount-value" value="0" min="0" step="0.01" oninput="calculateTotals()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Observações / Condições</label>
+                        <textarea id="quote-notes" rows="3" placeholder="Ex: Prazo de execução de 3 dias úteis..." class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updatePreview()">Orçamento sujeito à aprovação. Pagamento em até 3x no cartão de crédito.</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Termos de Garantia</label>
+                        <textarea id="quote-warranty" rows="3" placeholder="Ex: Garantia de 90 dias para serviços executados..." class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" oninput="updatePreview()">Garantia legal de 90 dias cobrindo exclusivamente os serviços executados e peças substituídas.</textarea>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="triggerPrint()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2 text-base">
+                        <i class="fa-solid fa-print"></i> Gerar / Imprimir Orçamento (PDF)
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Panel: Professional Clean Printable Preview -->
+        <div class="lg:col-span-5">
+            <div class="sticky top-6">
+                <div class="flex justify-between items-center mb-2 px-1">
+                    <span class="text-xs font-bold tracking-wider text-slate-500 uppercase flex items-center gap-1.5">
+                        <i class="fa-solid fa-eye text-blue-600"></i> Pré-visualização do Documento
+                    </span>
+                    <span class="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Pronto para entrega</span>
+                </div>
+
+                <!-- Printable Document Box -->
+                <div id="printable-quote" class="bg-white rounded-2xl shadow-md border border-slate-200 p-6 text-slate-800 text-xs sm:text-sm">
+                    
+                    <!-- Header / Company Info -->
+                    <div class="flex justify-between items-start border-b border-slate-200 pb-5 mb-5">
+                        <div>
+                            <div class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-screwdriver-wrench text-blue-600"></i> Assistência Técnica Pro
+                            </div>
+                            <p class="text-slate-500 text-[11px] mt-0.5">CNPJ: 12.345.678/0001-90</p>
+                            <p class="text-slate-500 text-[11px]">Av. Principal, 1000 - Centro - Tel: (11) 98765-4321</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-base font-bold text-blue-600" id="preview-quote-number">ORÇAMENTO #001</div>
+                            <div class="text-slate-500 text-[11px] mt-0.5">Data: <span id="preview-quote-date">--/--/----</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Client Summary Box -->
+                    <div class="bg-slate-50 rounded-xl p-3.5 mb-4 border border-slate-100">
+                        <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Dados do Cliente</div>
+                        <div class="font-bold text-slate-900" id="preview-client-name">Nenhum cliente selecionado</div>
+                        <div class="text-slate-600 text-xs mt-0.5" id="preview-client-doc">CPF/CNPJ: --</div>
+                        <div class="text-slate-600 text-xs" id="preview-client-contact">Telefone: -- | E-mail: --</div>
+                        <div class="text-slate-600 text-xs" id="preview-client-address">Endereço: --</div>
+                    </div>
+
+                    <!-- Equipment Summary Box -->
+                    <div class="bg-slate-50 rounded-xl p-3.5 mb-4 border border-slate-100">
+                        <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Equipamento / Aparelho</div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div><span class="text-slate-500">Aparelho:</span> <strong id="preview-eq-type" class="text-slate-800">--</strong></div>
+                            <div><span class="text-slate-500">Marca/Modelo:</span> <strong id="preview-eq-brand-model" class="text-slate-800">--</strong></div>
+                            <div><span class="text-slate-500">Série/IMEI:</span> <strong id="preview-eq-serial" class="text-slate-800">--</strong></div>
+                            <div><span class="text-slate-500">Acessórios:</span> <strong id="preview-eq-accessories" class="text-slate-800">--</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- Selected Items Table -->
+                    <div class="mb-4">
+                        <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Peças e Serviços Selecionados</div>
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-slate-500 text-[11px]">
+                                    <th class="py-1.5">Descrição</th>
+                                    <th class="py-1.5 text-center w-12">Qtd</th>
+                                    <th class="py-1.5 text-right w-20">V. Unit</th>
+                                    <th class="py-1.5 text-right w-20">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="preview-items-tbody" class="divide-y divide-slate-100 text-xs">
+                                <tr>
+                                    <td colspan="4" class="py-3 text-center text-slate-400 italic">Nenhum item selecionado</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Totals Calculation Box -->
+                    <div class="border-t border-slate-200 pt-3 mb-4 space-y-1.5 text-xs">
+                        <div class="flex justify-between text-slate-600">
+                            <span>Subtotal dos Itens:</span>
+                            <span id="preview-subtotal" class="font-medium">R$ 0,00</span>
+                        </div>
+                        <div id="preview-discount-row" class="flex justify-between text-emerald-600 hidden">
+                            <span>Desconto Aplicado:</span>
+                            <span id="preview-discount-amount" class="font-medium">- R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between text-base font-bold text-slate-900 border-t border-slate-200 pt-2 mt-1">
+                            <span>Total Geral:</span>
+                            <span id="preview-total" class="text-blue-600">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <!-- Notes & Warranty -->
+                    <div class="space-y-2 border-t border-slate-200 pt-3 text-[11px] text-slate-600">
+                        <div>
+                            <span class="font-semibold text-slate-700">Observações:</span>
+                            <p id="preview-notes" class="mt-0.5 text-slate-500 whitespace-pre-line"></p>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-slate-700">Termos de Garantia:</span>
+                            <p id="preview-warranty" class="mt-0.5 text-slate-500 whitespace-pre-line"></p>
+                        </div>
+                    </div>
+
+                    <!-- Signature Area for Print -->
+                    <div class="mt-8 pt-8 border-t border-dashed border-slate-300 grid grid-cols-2 gap-8 text-center text-[10px] text-slate-500">
+                        <div>
+                            <div class="border-b border-slate-400 mb-1 pb-4"></div>
+                            <span>Assinatura da Empresa</span>
+                        </div>
+                        <div>
+                            <div class="border-b border-slate-400 mb-1 pb-4"></div>
+                            <span>Assinatura do Cliente / Aprovação</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="import-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-file-csv text-blue-600"></i> Importar Serviços e Peças
+                </h3>
+                <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <p class="text-xs text-slate-600">
+                Cole abaixo os dados copiados da sua planilha (Formato: <strong>Nome do Item; Valor Unitário</strong> por linha) ou selecione um arquivo CSV.
+            </p>
+            <div>
+                <textarea id="csv-input-data" rows="6" placeholder="Exemplo:
+Troca de Tela LCD; 350.00
+Formatação e Backup; 150.00
+Bateria Original Notebook; 280.00" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button onclick="closeImportModal()" class="px-4 py-2 border border-slate-300 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-50 transition">Cancelar</button>
+                <button onclick="processCSVImport()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-medium transition shadow-sm">Processar e Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initial Mock Database for Clients
+        let clients = [
+            { id: 1, name: "Ana Beatriz Souza", doc: "123.456.789-00", phone: "(11) 99887-7665", email: "ana.souza@email.com", address: "Rua das Flores, 45 - São Paulo/SP" },
+            { id: 2, name: "Carlos Eduardo Lima", doc: "987.654.321-11", phone: "(21) 98765-4321", email: "carlos.lima@email.com", address: "Av. Atlântica, 500 - Rio de Janeiro/RJ" },
+            { id: 3, name: "Empresa Tech Solutions Ltda", doc: "45.123.789/0001-22", phone: "(31) 3222-1100", email: "contato@techsolutions.com", address: "Rua da Tecnologia, 200 - Belo Horizonte/MG" }
+        ];
+
+        // Initial Mock Database for Services and Parts Catalog
+        let catalogItems = [
+            { id: 101, name: "Formatação Completa + Backup de Dados", price: 150.00 },
+            { id: 102, name: "Substituição de Tela LED/LCD Notebook", price: 380.00 },
+            { id: 103, name: "Troca de Bateria Externa/Interna Notebook", price: 250.00 },
+            { id: 104, name: "Limpeza Interna e Troca de Pasta Térmica", price: 120.00 },
+            { id: 105, name: "Reparo de Placa Mãe (Nível Avançado)", price: 450.00 },
+            { id: 106, name: "Instalação de SSD 240GB + Configuração", price: 280.00 },
+            { id: 107, name: "Visita Técnica / Diagnóstico em Bancada", price: 80.00 }
+        ];
+
+        // Selected items state mapping: itemId -> { checked, qty, price }
+        let selectedItemsState = {};
+
+        // On window load initialization
+        window.onload = function() {
+            // Generate Quote Number
+            const randomNum = Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('quote-number').value = `ORC-${randomNum}`;
+            
+            // Set current date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('quote-date').value = today;
+
+            // Populate clients dropdown
+            populateClientDropdown();
+
+            // Initialize catalog table
+            renderCatalog();
+
+            // Initial calculation & preview
+            calculateTotals();
+        };
+
+        // Populate client select options
+        function populateClientDropdown() {
+            const select = document.getElementById('client-select');
+            select.innerHTML = '<option value="">Selecione um cliente...</option>';
+            clients.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `${c.name} (${c.doc})`;
+                select.appendChild(opt);
+            });
+        }
+
+        // Toggle new client form
+        function toggleNewClient() {
+            document.getElementById('client-select-container').classList.add('hidden');
+            document.getElementById('client-form-container').classList.remove('hidden');
+            document.getElementById('toggle-client-btn').classList.add('hidden');
+        }
+
+        function cancelNewClient() {
+            document.getElementById('client-form-container').classList.add('hidden');
+            document.getElementById('client-select-container').classList.remove('hidden');
+            document.getElementById('toggle-client-btn').classList.remove('hidden');
+        }
+
+        // Save new client dynamically
+        function saveNewClient() {
+            const name = document.getElementById('new-client-name').value.trim();
+            if (!name) {
+                alert("Por favor, preencha pelo menos o nome do cliente.");
+                return;
+            }
+            const newClient = {
+                id: Date.now(),
+                name: name,
+                doc: document.getElementById('new-client-doc').value.trim() || "Não informado",
+                phone: document.getElementById('new-client-phone').value.trim() || "Não informado",
+                email: document.getElementById('new-client-email').value.trim() || "Não informado",
+                address: document.getElementById('new-client-address').value.trim() || "Não informado"
+            };
+
+            clients.push(newClient);
+            populateClientDropdown();
+
+            // Auto select the newly created client
+            document.getElementById('client-select').value = newClient.id;
+            cancelNewClient();
+            onSelectClient();
+        }
+
+        // When a client is selected
+        function onSelectClient() {
+            updatePreview();
+        }
+
+        // Render Catalog Table
+        function renderCatalog() {
+            const tbody = document.getElementById('catalog-tbody');
+            tbody.innerHTML = '';
+
+            catalogItems.forEach(item => {
+                if (selectedItemsState[item.id] === undefined) {
+                    selectedItemsState[item.id] = { checked: false, qty: 1, price: item.price };
+                }
+                const state = selectedItemsState[item.id];
+                const subtotal = state.checked ? (state.qty * state.price) : 0;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                tr.innerHTML = `
+                    <td class="p-3 text-center">
+                        <input type="checkbox" id="check-${item.id}" ${state.checked ? 'checked' : ''} onchange="toggleItem(${item.id})" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer">
+                    </td>
+                    <td class="p-3 font-medium text-slate-700">${item.name}</td>
+                    <td class="p-3">
+                        <input type="number" id="qty-${item.id}" value="${state.qty}" min="1" oninput="updateItemQty(${item.id})" class="w-16 bg-white border border-slate-300 rounded px-2 py-1 text-center text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    </td>
+                    <td class="p-3 text-right">
+                        <input type="number" id="price-${item.id}" value="${state.price.toFixed(2)}" step="0.01" min="0" oninput="updateItemPrice(${item.id})" class="w-24 bg-white border border-slate-300 rounded px-2 py-1 text-right text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    </td>
+                    <td class="p-3 text-right font-semibold text-slate-800" id="subtotal-${item.id}">
+                        R$ ${subtotal.toFixed(2)}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Item Interaction Handlers
+        function toggleItem(id) {
+            const isChecked = document.getElementById(`check-${id}`).checked;
+            selectedItemsState[id].checked = isChecked;
+            calculateTotals();
+        }
+
+        function updateItemQty(id) {
+            const qty = parseInt(document.getElementById(`qty-${id}`).value) || 1;
+            selectedItemsState[id].qty = qty;
+            calculateTotals();
+        }
+
+        function updateItemPrice(id) {
+            const price = parseFloat(document.getElementById(`price-${id}`).value) || 0;
+            selectedItemsState[id].price = price;
+            calculateTotals();
+        }
+
+        // Add custom item/service
+        function addCustomItem() {
+            const name = document.getElementById('custom-item-name').value.trim();
+            const price = parseFloat(document.getElementById('custom-item-price').value) || 0;
+
+            if (!name) {
+                alert("Digite o nome do item ou serviço avulso.");
+                return;
+            }
+
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                price: price
+            };
+
+            catalogItems.push(newItem);
+            selectedItemsState[newItem.id] = { checked: true, qty: 1, price: price };
+
+            document.getElementById('custom-item-name').value = '';
+            document.getElementById('custom-item-price').value = '';
+
+            renderCatalog();
+            calculateTotals();
+        }
+
+        // Calculate Totals and Update Preview
+        function calculateTotals() {
+            let subtotalGeneral = 0;
+            let previewTableHtml = '';
+            let hasActiveItems = false;
+
+            for (let id in selectedItemsState) {
+                const state = selectedItemsState[id];
+                const catalogItem = catalogItems.find(i => i.id == id);
+                if (!catalogItem) continue;
+
+                // Sync UI elements if rendered
+                const subEl = document.getElementById(`subtotal-${id}`);
+                const itemSubtotal = state.checked ? (state.qty * state.price) : 0;
+                if (subEl) subEl.textContent = `R$ ${itemSubtotal.toFixed(2)}`;
+
+                if (state.checked) {
+                    hasActiveItems = true;
+                    subtotalGeneral += itemSubtotal;
+                    previewTableHtml += `
+                        <tr class="border-b border-slate-100">
+                            <td class="py-2 text-slate-800 font-medium">${catalogItem.name}</td>
+                            <td class="py-2 text-center text-slate-600">${state.qty}</td>
+                            <td class="py-2 text-right text-slate-600">R$ ${state.price.toFixed(2)}</td>
+                            <td class="py-2 text-right font-semibold text-slate-800">R$ ${itemSubtotal.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }
+            }
+
+            if (!hasActiveItems) {
+                previewTableHtml = `<tr><td colspan="4" class="py-3 text-center text-slate-400 italic">Nenhum item selecionado</td></tr>`;
+            }
+
+            // Discount calculation
+            const discountType = document.getElementById('discount-type').value;
+            let discountInputVal = parseFloat(document.getElementById('discount-value').value) || 0;
+            let discountAmount = 0;
+
+            if (discountType === 'fixed') {
+                discountAmount = discountInputVal;
+            } else {
+                discountAmount = (subtotalGeneral * discountInputVal) / 100;
+            }
+
+            if (discountAmount > subtotalGeneral) discountAmount = subtotalGeneral;
+            const finalTotal = Math.max(0, subtotalGeneral - discountAmount);
+
+            // Update Preview Totals
+            document.getElementById('preview-subtotal').textContent = `R$ ${subtotalGeneral.toFixed(2)}`;
+            const discountRow = document.getElementById('preview-discount-row');
+            if (discountAmount > 0) {
+                discountRow.classList.remove('hidden');
+                document.getElementById('preview-discount-amount').textContent = `- R$ ${discountAmount.toFixed(2)}`;
+            } else {
+                discountRow.classList.add('hidden');
+            }
+            document.getElementById('preview-total').textContent = `R$ ${finalTotal.toFixed(2)}`;
+            document.getElementById('preview-items-tbody').innerHTML = previewTableHtml;
+
+            updatePreviewTextOnly();
+        }
+
+        // Update Text Fields in Preview
+        function updatePreview() {
+            updatePreviewTextOnly();
+        }
+
+        function updatePreviewTextOnly() {
+            // Quote Meta
+            document.getElementById('preview-quote-number').textContent = document.getElementById('quote-number').value;
+            const dateVal = document.getElementById('quote-date').value;
+            if (dateVal) {
+                const parts = dateVal.split('-');
+                document.getElementById('preview-quote-date').textContent = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+
+            // Client Data
+            const clientId = document.getElementById('client-select').value;
+            const client = clients.find(c => c.id == clientId);
+            if (client) {
+                document.getElementById('preview-client-name').textContent = client.name;
+                document.getElementById('preview-client-doc').textContent = `CPF/CNPJ: ${client.doc}`;
+                document.getElementById('preview-client-contact').textContent = `Tel: ${client.phone} | E-mail: ${client.email}`;
+                document.getElementById('preview-client-address').textContent = `Endereço: ${client.address}`;
+            } else {
+                document.getElementById('preview-client-name').textContent = "Selecione um cliente";
+                document.getElementById('preview-client-doc').textContent = "CPF/CNPJ: --";
+                document.getElementById('preview-client-contact').textContent = "Telefone: -- | E-mail: --";
+                document.getElementById('preview-client-address').textContent = "Endereço: --";
+            }
+
+            // Equipment Data
+            document.getElementById('preview-eq-type').textContent = document.getElementById('eq-type').value || "Não informado";
+            const brand = document.getElementById('eq-brand').value;
+            const model = document.getElementById('eq-model').value;
+            document.getElementById('preview-eq-brand-model').textContent = (brand || model) ? `${brand} ${model}`.trim() : "Não informado";
+            document.getElementById('preview-eq-serial').textContent = document.getElementById('eq-serial').value || "Não informado";
+            document.getElementById('preview-eq-accessories').textContent = document.getElementById('eq-accessories').value || "Nenhum";
+
+            // Notes & Warranty
+            document.getElementById('preview-notes').textContent = document.getElementById('quote-notes').value;
+            document.getElementById('preview-warranty').textContent = document.getElementById('quote-warranty').value;
+        }
+
+        // CSV Import modal controls
+        function openImportModal() {
+            document.getElementById('import-modal').classList.remove('hidden');
+        }
+
+        function closeImportModal() {
+            document.getElementById('import-modal').classList.add('hidden');
+        }
+
+        // Process CSV or pasted spreadsheet text
+        function processCSVImport() {
+            const rawText = document.getElementById('csv-input-data').value.trim();
+            if (!rawText) {
+                alert("Cole os dados da planilha antes de importar.");
+                return;
+            }
+
+            const lines = rawText.split('\n');
+            let addedCount = 0;
+
+            lines.forEach(line => {
+                const parts = line.split(';');
+                if (parts.length >= 2) {
+                    const name = parts[0].trim();
+                    let price = parseFloat(parts[1].trim().replace(',', '.')) || 0;
+                    if (name) {
+                        const newItem = {
+                            id: Date.now() + Math.floor(Math.random() * 1000),
+                            name: name,
+                            price: price
+                        };
+                        catalogItems.push(newItem);
+                        selectedItemsState[newItem.id] = { checked: false, qty: 1, price: price };
+                        addedCount++;
+                    }
+                }
+            });
+
+            if (addedCount > 0) {
+                renderCatalog();
+                closeImportModal();
+                document.getElementById('csv-input-data').value = '';
+                alert(`${addedCount} novos itens importados com sucesso para a tabela!`);
+            } else {
+                alert("Nenhum item válido encontrado. Certifique-se de usar o formato Nome; Valor.");
+            }
+        }
+
+        // Trigger Browser Print/PDF Generation
+        function triggerPrint() {
+            window.print();
+        }
+
+        // Reset Form for New Quote
+        function resetForm() {
+            const randomNum = Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('quote-number').value = `ORC-${randomNum}`;
+            document.getElementById('client-select').value = "";
+            document.getElementById('eq-type').value = "";
+            document.getElementById('eq-brand').value = "";
+            document.getElementById('eq-model').value = "";
+            document.getElementById('eq-serial').value = "";
+            document.getElementById('eq-accessories').value = "";
+            document.getElementById('discount-value').value = "0";
+            
+            for (let id in selectedItemsState) {
+                selectedItemsState[id].checked = false;
+                selectedItemsState[id].qty = 1;
+            }
+            renderCatalog();
+            calculateTotals();
+        }
+    </script>
+</body>
+</html>
